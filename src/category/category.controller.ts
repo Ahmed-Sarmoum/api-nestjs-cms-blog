@@ -1,4 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Res } from '@nestjs/common/decorators';
+import { Response } from 'express';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -28,7 +30,7 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.categoryService.remove(+id);
+  remove(@Param('id') id: string, @Res() res: Response) {
+    return this.categoryService.remove(+id, res);
   }
 }

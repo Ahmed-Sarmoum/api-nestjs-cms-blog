@@ -1,34 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Controller, Post, Body, Res, Get, UseGuards, Req} from '@nestjs/common';
+import { AuthService } from './auth.service'; 
+import { UserLoginDto } from './dto/user-login.dto';
+import { Request, Response } from 'express'
+import { CreateUserDto } from './dto/create-user.dto';
+import { CurrentUser } from './user.decorator';
+import { User } from './entities/user.entity';
+import { CurrentUserGuard } from './current-user.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('register') 
+  async register(@Body() createUserDto:CreateUserDto) {
+    return this.authService.register(createUserDto)
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('login')
+  async login(@Body() userLoginDto: UserLoginDto, @Res() res: Response) {
+    const {token, user} = await this.authService.login(userLoginDto)
+    
+    res.cookie('IsAuthenticated', true, { maxAge: 2*60*60*1000 })
+    res.cookie('Authentication', token, {
+      httpOnly: true,
+      maxAge: 2*60*60*1000
+    })
+
+    return res.send({ success: true, user })
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  @Get('authstatus')
+  @UseGuards(CurrentUserGuard)
+  authStatus(@CurrentUser() user: User) {
+    return { status: !!user, user}
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
+  @Post('logout')
+  logout(@Req() req: Request, @Res() res: Response) {
+    res.clearCookie('Authentication')
+    res.clearCookie('IsAuthenticated')
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+    return res.status(200).send({ success: true })
   }
 }

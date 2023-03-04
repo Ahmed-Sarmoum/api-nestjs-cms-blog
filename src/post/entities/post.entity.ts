@@ -1,6 +1,8 @@
 import { User } from "src/auth/entities/user.entity"
 import { Category } from "src/category/entities/category.entity"
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm"
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, BeforeInsert } from "typeorm"
+import slugify from "slugify"
+import { Exclude } from "class-transformer"
 
 @Entity("posts")
 export class Post {
@@ -25,10 +27,12 @@ export class Post {
     @Column({type: 'timestamp', default: () => 'CURRENT_TIMESTAMP'})
     updated_at: Date
 
-    @Column({default: 1})
+    @Column()
+    @Exclude()
     userId: number
 
-    @Column()
+    @Column({default: 1})
+    @Exclude()
     categoryId: number
 
     @ManyToOne(() => User, (user) => user.post, {
@@ -44,5 +48,13 @@ export class Post {
         eager: true
     })
     category: Category
+
+    @BeforeInsert()
+    slugifyPost() {
+        this.slug = slugify(this.title.substring(0, 20), {
+            lower: true,
+            replacement: '_'
+        })
+    }
    
 }
